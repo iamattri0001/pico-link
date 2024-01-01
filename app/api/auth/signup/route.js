@@ -1,7 +1,5 @@
 import { connect } from "@/database/connectToDB";
-import ShortUrl from "@/database/models/ShortUrl";
 import User from "@/database/models/User";
-import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
 import { NextResponse } from "next/server";
