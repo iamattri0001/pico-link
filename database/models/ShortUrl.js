@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const shortUrlSchema =  mongoose.Schema({
+const shortUrlSchema = new mongoose.Schema({
   originalUrl: {
     type: String,
     required: true,
