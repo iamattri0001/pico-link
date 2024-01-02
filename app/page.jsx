@@ -1,9 +1,12 @@
-"use client";
-import { useTheme } from "next-themes";
+import { UserButton } from "@clerk/nextjs";
+import React from "react";
 
-const Home = () => {
-  const { theme, setTheme } = useTheme();
-  return <div>Home</div>;
+const page = () => {
+  return (
+    <div>
+      <UserButton afterSignOutUrl="/sign-in" />
+    </div>
+  );
 };
 
-export default Home;
+export default page;
