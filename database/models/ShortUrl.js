@@ -14,7 +14,7 @@ const ShortUrlSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  visitCount: {
+  visits: {
     type: Number,
     default: 0,
   },
@@ -24,6 +24,11 @@ const ShortUrlSchema = new mongoose.Schema({
   },
   updatedAt: {
     type: Date,
+    default: null,
+  },
+  url: {
+    type: String,
+    required: true,
   },
 });
 

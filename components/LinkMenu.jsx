@@ -4,98 +4,55 @@ import React, { useEffect, useRef, useState } from "react";
 import Linkitem from "./Linkitem";
 import toast from "react-hot-toast";
 import SuccessToast from "./toasts/SuccessToast";
+import axios from "axios";
+import ErrorToast from "./toasts/ErrorToast";
+import { isValidUrl } from "@/lib/toast/isValidUrl";
+import { ImSpinner9 } from "react-icons/im";
+import { toastIdGenerator } from "@/lib/toast/toastIdGenerator";
 
-const LinkMenu = () => {
+const LinkMenu = ({ userId }) => {
   const [createMenuOpen, setCreateMenu] = useState(false);
-  const [links, setLinks] = useState([
-    {
-      name: "Link 1",
-      cratedAt: "23 aug 2023",
-      url: "https://google.com/api/auth/92378283123",
-    },
-    {
-      name: "Link 1",
-      cratedAt: "23 aug 2023",
-      url: "https://google.com/api/auth/92378283123",
-    },
-    {
-      name: "Link 1",
-      cratedAt: "23 aug 2023",
-      url: "https://google.com/api/auth/92378283123",
-    },
-    {
-      name: "Link 1",
-      cratedAt: "23 aug 2023",
-      url: "https://google.com/api/auth/92378283123",
-    },
-    {
-      name: "Link 1",
-      cratedAt: "23 aug 2023",
-      url: "https://google.com/api/auth/92378283123",
-    },
-    {
-      name: "Link 1",
-      cratedAt: "23 aug 2023",
-      url: "https://google.com/api/auth/92378283123",
-    },
-    {
-      name: "Link 1",
-      cratedAt: "23 aug 2023",
-      url: "https://google.com/api/auth/92378283123",
-    },
-    {
-      name: "Link 1",
-      cratedAt: "23 aug 2023",
-      url: "https://google.com/api/auth/92378283123",
-    },
+  const [links, setLinks] = useState(null);
 
-    {
-      name: "Link 1",
-      cratedAt: "23 aug 2023",
-      url: "https://google.com/api/auth/92378283123",
-    },
-    {
-      name: "Link 1",
-      cratedAt: "23 aug 2023",
-      url: "https://google.com/api/auth/92378283123",
-    },
+  useEffect(() => {
+    const fetchLinks = async () => {
+      const response = await axios.get(`/api/links/fetchAll`, {
+        params: {
+          userId,
+        },
+      });
+      if (response.status === 200) {
+        setLinks(response.data.links);
+      }
+    };
 
-    {
-      name: "Link 1",
-      cratedAt: "23 aug 2023",
-      url: "https://google.com/api/auth/92378283123",
-    },
-    {
-      name: "Link 1",
-      cratedAt: "23 aug 2023",
-      url: "https://google.com/api/auth/92378283123",
-    },
-
-    {
-      name: "Link 1",
-      cratedAt: "23 aug 2023",
-      url: "https://google.com/api/auth/92378283123",
-    },
-    {
-      name: "Link 1",
-      cratedAt: "23 aug 2023",
-      url: "https://google.com/api/auth/92378283123",
-    },
-  ]);
+    fetchLinks();
+  }, []);
 
   return (
-    <div className="border relative border-secondary px-5 py-3 rounded max-w-[640px] min-w-[50vw] flex flex-col gap-y-4 items-start">
+    <div className="border relative border-secondary/50 px-5 py-3 rounded max-w-[640px] min-w-[50vw] flex flex-col gap-y-4 items-start">
       <h3 className="text-xl text-text/90"> All links created by you</h3>
-      <div className="h-[70vh] overflow-y-scroll flex flex-col gap-y-3 w-full">
-        {links.map((link, i) => (
-          <Linkitem link={link} key={i} />
-        ))}
+      <div className="max-h-[70vh] overflow-y-scroll flex flex-col gap-y-3 w-full border-t border-b py-5 border-text/40">
+        {links &&
+          links.map((link, i) => (
+            <Linkitem link={link} key={i} userId={userId} setLinks={setLinks} />
+          ))}
+        {links && !links.length && (
+          <p className="text-center text-text/40"> The list is empty</p>
+        )}
+
+        {!links && (
+          <div className="flex items-center justify-center">
+            <ImSpinner9 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
       </div>
       {createMenuOpen && (
         <CreateMenu
           links={links}
           setLinks={setLinks}
           setCreateMenu={setCreateMenu}
+          userId={userId}
         />
       )}
       {!createMenuOpen && (
@@ -110,7 +67,7 @@ const LinkMenu = () => {
   );
 };
 
-const CreateMenu = ({ setLinks, links, setCreateMenu }) => {
+const CreateMenu = ({ setLinks, setCreateMenu, userId }) => {
   const nameInputRef = useRef(null);
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
@@ -125,9 +82,40 @@ const CreateMenu = ({ setLinks, links, setCreateMenu }) => {
   }, [nameInputRef]);
 
   const handleCreate = async () => {
-    toast.custom((t) => (
-      <SuccessToast toast={t} message={"Link created successfully"} />
-    ));
+    if (name.length < 3) {
+      toast.custom(
+        (t) => <ErrorToast toast={t} message={"Name is too short"} />,
+        { id: toastIdGenerator() }
+      );
+      return;
+    }
+
+    if (!isValidUrl(url)) {
+      toast.custom(
+        (t) => <ErrorToast toast={t} message={"Please enter a valid URL"} />,
+        { id: toastIdGenerator() }
+      );
+      return;
+    }
+
+    const response = await axios.post("/api/links/create", {
+      url,
+      name,
+      userId,
+    });
+
+    if (response.status === 200) {
+      const { link } = response.data;
+      setLinks((prev) => {
+        return [{ ...link, isNew: true }, ...prev];
+      });
+      setCreateMenu(false);
+    }
+
+    toast.custom(
+      (t) => <SuccessToast toast={t} message={"Link created successfully"} />,
+      { id: toastIdGenerator() }
+    );
   };
 
   return (

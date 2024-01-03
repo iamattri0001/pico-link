@@ -1,15 +1,43 @@
 "use client";
 
-import { IoLink } from "react-icons/io5";
+import { FiClipboard } from "react-icons/fi";
 import { FaRegCalendarAlt, FaEye, FaEdit } from "react-icons/fa";
 import { AiOutlineDelete } from "react-icons/ai";
-import { use, useState } from "react";
+import { MdUpdate } from "react-icons/md";
+
+import { useState } from "react";
 import toast from "react-hot-toast";
 import SuccessToast from "./toasts/SuccessToast";
-const Linkitem = ({ link }) => {
+
+import { formatDistance } from "date-fns";
+import axios from "axios";
+import ErrorToast from "./toasts/ErrorToast";
+import { toastIdGenerator } from "@/lib/toast/toastIdGenerator";
+
+const Linkitem = ({ link, userId, setLinks }) => {
   const [hover, setHover] = useState(false);
   const [editMenuOpen, setEditMenuOpen] = useState(false);
   const [deleteMenuOpen, setDeleteMenuOpen] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      let linkUrl = process.env.NEXT_PUBLIC_DOMAIN + "/u/" + link.shortId;
+      linkUrl = linkUrl.replace(/^https?:\/\//, "");
+      await window.navigator.clipboard.writeText(linkUrl);
+      toast.custom(
+        (t) => <SuccessToast message={"Copied to clipboard"} toast={t} />,
+        {
+          id: toastIdGenerator(),
+        }
+      );
+    } catch (err) {
+      toast.custom(
+        (rt) => <ErrorToast message={"Failed to copy"} toast={t} />,
+        { id: toastIdGenerator() }
+      );
+      console.error(err);
+    }
+  };
 
   return (
     <div
@@ -21,23 +49,52 @@ const Linkitem = ({ link }) => {
         setHover(false);
       }}
     >
+      {link.isNew && (
+        <div className="ring-1 ring-accent top-2 right-2 absolute px-2 text-xs py-1 rounded-full">
+          New
+        </div>
+      )}
       <h4 className="text-accent truncate w-2/3 text-lg">{link.name}</h4>
       <div className="flex items-center gap-x-2">
-        <IoLink className="h-6 w-6 text-primary" />
-        <h4 className="text-primary w-3/4 truncate">{link.url}</h4>
+        <FiClipboard
+          className="h-5 w-5 hover:text-text text-primary cursor-pointer transition-all"
+          title="Copy"
+          onClick={handleCopy}
+        />
+        <a
+          href={
+            "https://chat.openai.com/c/4f04daf8-1a3f-4255-b8c6-0d100969130b"
+          }
+          target="_blank"
+          className="text-primary w-3/4 truncate hover:underline"
+        >
+          {link.url}
+        </a>
       </div>
       <div className="text-sm flex items-center gap-x-5">
-        <div className="flex items-center gap-x-1" title="views">
+        <div className="flex items-center gap-x-1.5" title="views">
           <FaEye />
-          <span>{link.views || 20}</span>
+          <span>{link.visits}</span>
         </div>
-        <div className="flex items-center gap-x-1" title="Date of creation">
+        <div className="flex items-center gap-x-1.5" title="Date of creation">
           <FaRegCalendarAlt />
-          <span>{link.cratedAt}</span>
+          <span>
+            {formatDistance(link.createdAt, new Date(), { addSuffix: true })}
+          </span>
         </div>
+        {link.updatedAt && (
+          <div title="Date of updation" className="flex items-center gap-x-1.5">
+            <MdUpdate className="h-4 w-4" />
+            <span>
+              {formatDistance(link.updatedAt, new Date(), {
+                addSuffix: true,
+              })}
+            </span>
+          </div>
+        )}
       </div>
       {hover && (
-        <div className="absolute right-2 top-10 flex gap-x-5 items-center justify-around">
+        <div className="absolute right-2 top-14 flex gap-x-5 items-center justify-around">
           <FaEdit
             className="h-8 w-8 text-primary cursor-pointer"
             title="Edit"
@@ -57,22 +114,62 @@ const Linkitem = ({ link }) => {
       )}
 
       {editMenuOpen && (
-        <EditMenu link={link} setEditMenuOpen={setEditMenuOpen} />
+        <EditMenu
+          setLinks={setLinks}
+          link={link}
+          setEditMenuOpen={setEditMenuOpen}
+          userId={userId}
+        />
       )}
 
       {deleteMenuOpen && (
-        <DeleteMenu link={link} setDeleteMenuOpen={setDeleteMenuOpen} />
+        <DeleteMenu
+          setLinks={setLinks}
+          link={link}
+          setDeleteMenuOpen={setDeleteMenuOpen}
+          userId={userId}
+        />
       )}
     </div>
   );
 };
 
-const EditMenu = ({ link, setEditMenuOpen }) => {
+const EditMenu = ({ link, setEditMenuOpen, userId, setLinks }) => {
   const [name, setName] = useState(link.name);
   const [url, setUrl] = useState(link.url);
 
   const handleUpdate = async () => {
-    toast.custom((t) => <SuccessToast toast={t} message={"Link updated"} />);
+    const response = await axios.post("/api/links/update", {
+      userId,
+      _id: link._id,
+      name,
+      url,
+    });
+
+    if (response.status === 200) {
+      setLinks((prev) => {
+        let newLinks = prev.filter((ele) => {
+          return ele._id != link._id;
+        });
+
+        return [{ ...link, name, url }, ...newLinks];
+      });
+      toast.custom(
+        (t) => <SuccessToast message={"Link updated successfully"} toast={t} />,
+        { id: toastIdGenerator() }
+      );
+      setEditMenuOpen(false);
+    } else {
+      toast.custom(
+        (t) => (
+          <ErrorToast
+            message={"Unable to update this link, try again"}
+            toast={t}
+          />
+        ),
+        { id: toastIdGenerator() }
+      );
+    }
   };
 
   return (
@@ -112,11 +209,35 @@ const EditMenu = ({ link, setEditMenuOpen }) => {
   );
 };
 
-const DeleteMenu = ({ link, setDeleteMenuOpen }) => {
+const DeleteMenu = ({ link, setDeleteMenuOpen, userId, setLinks }) => {
   const handleDelete = async () => {
-    toast.custom((t) => (
-      <SuccessToast message={"Link deleted successfully"} toast={t} />
-    ));
+    const response = await axios.post("/api/links/delete", {
+      userId,
+      _id: link._id,
+    });
+
+    if (response.status === 200) {
+      setLinks((prev) => {
+        return prev.filter((ele) => {
+          return ele._id != link._id;
+        });
+      });
+      toast.custom(
+        (t) => <SuccessToast message={"Link deleted successfully"} toast={t} />,
+        { id: toastIdGenerator() }
+      );
+      setDeleteMenuOpen(false);
+    } else {
+      toast.custom(
+        (t) => (
+          <ErrorToast
+            message={"Unable to delete this link, try again"}
+            toast={t}
+          />
+        ),
+        { id: toastIdGenerator() }
+      );
+    }
   };
   return (
     <div className="flex flex-col gap-y-3 items-center mt-5">
