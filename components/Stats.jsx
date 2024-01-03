@@ -2,19 +2,20 @@
 
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { FaLink, FaEye, FaUserPlus, FaClipboard } from "react-icons/fa";
+import { FaLink, FaEye, FaUserPlus } from "react-icons/fa";
 import { ImSpinner9 } from "react-icons/im";
 export const Stats = ({ userId }) => {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
     const fetchStats = async () => {
-      const response = await axios.get("/api/links/getStata", {
+      const response = await axios.get("/api/links/getStats", {
         params: { userId },
       });
 
       if (response.status === 200) {
         const { totalLinks, totalVisits, maxVisits } = response.data;
+        console.log(totalLinks, totalVisits, maxVisits);
         setStats({ totalLinks, totalVisits, maxVisits });
       } else {
         setStats({
@@ -25,7 +26,7 @@ export const Stats = ({ userId }) => {
       }
     };
 
-    // fetchStats();
+    fetchStats();
   }, []);
 
   return (

@@ -32,7 +32,7 @@ const LinkMenu = ({ userId }) => {
   return (
     <div className="border relative border-secondary/50 px-5 py-3 rounded max-w-[640px] min-w-[50vw] flex flex-col gap-y-4 items-start">
       <h3 className="text-xl text-text/90"> All links created by you</h3>
-      <div className="max-h-[70vh] overflow-y-scroll flex flex-col gap-y-3 w-full border-t border-b py-5 border-text/40">
+      <div className="max-h-[70vh] overflow-y-auto flex flex-col gap-y-3 w-full border-t border-b py-5 border-text/40">
         {links &&
           links.map((link, i) => (
             <Linkitem link={link} key={i} userId={userId} setLinks={setLinks} />
