@@ -25,7 +25,7 @@ const Linkitem = ({ link, userId, setLinks }) => {
       linkUrl = linkUrl.replace(/^https?:\/\//, "");
       await window.navigator.clipboard.writeText(linkUrl);
       toast.custom(
-        (t) => <SuccessToast message={"Copied to clipboard"} toast={t} />,
+        (t) => <SuccessToast message={"Short URL Copied to clipboard"} toast={t} />,
         {
           id: toastIdGenerator(),
         }
@@ -62,9 +62,7 @@ const Linkitem = ({ link, userId, setLinks }) => {
           onClick={handleCopy}
         />
         <a
-          href={
-            "https://chat.openai.com/c/4f04daf8-1a3f-4255-b8c6-0d100969130b"
-          }
+          href={link.url}
           target="_blank"
           className="text-primary w-3/4 truncate hover:underline"
         >

@@ -15,7 +15,6 @@ export const Stats = ({ userId }) => {
 
       if (response.status === 200) {
         const { totalLinks, totalVisits, maxVisits } = response.data;
-        console.log(totalLinks, totalVisits, maxVisits);
         setStats({ totalLinks, totalVisits, maxVisits });
       } else {
         setStats({
